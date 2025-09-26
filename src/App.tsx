@@ -423,7 +423,31 @@ const App: React.FC = () => {
         document.title = name && name.length ? `${name} — Прораб360` : 'Прораб360';
     }, [companyProfileHook.profile?.name]);
 
+    // Устанавливаем CSS переменную для реальной высоты viewport
     useEffect(() => {
+      const setVhVariable = () => {
+        // Вычисляем 1% от реальной высоты внутреннего окна
+        let vh = window.innerHeight * 0.01;
+        // Устанавливаем значение переменной --vh для <html>
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+
+      // Устанавливаем значение при первой загрузке
+      setVhVariable();
+
+      // Добавляем слушатель, чтобы обновлять значение при изменении размера окна
+      window.addEventListener('resize', setVhVariable);
+
+      // Очищаем слушатель при размонтировании компонента
+      return () => {
+        window.removeEventListener('resize', setVhVariable);
+      };
+    }, []);
+
+    useEffect(() => {
+        // Сохраняем исходную высоту viewport для сравнения
+        let initialViewportHeight = window.innerHeight;
+        
         const stabilizeMenus = () => {
             // Стабилизируем верхнее меню
             const appHeader = document.querySelector('.app-header') as HTMLElement;
@@ -475,6 +499,9 @@ const App: React.FC = () => {
                 // Дополнительная стабилизация для iOS
                 bottomNav.style.overflow = 'hidden';
                 (bottomNav.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
+                
+                // Дополнительно: принудительно устанавливаем z-index выше чем у других элементов
+                bottomNav.style.zIndex = '9999';
             }
             
             // Стабилизируем заголовки экранов
@@ -500,29 +527,58 @@ const App: React.FC = () => {
             });
         };
 
+        // Функция для обработки изменения размера viewport (например, при открытии клавиатуры)
+        const handleViewportChange = () => {
+            const currentHeight = window.innerHeight;
+            const heightDiff = initialViewportHeight - currentHeight;
+            
+            // Если высота изменилась более чем на 150px, вероятно, открылась клавиатура
+            if (Math.abs(heightDiff) > 150) {
+                // Увеличиваем z-index нижнего меню, чтобы оно оставалось поверх клавиатуры
+                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
+                if (bottomNav) {
+                    // Устанавливаем высоту, чтобы избежать сдвига
+                    bottomNav.style.height = '60px';
+                    bottomNav.style.minHeight = '60px';
+                    bottomNav.style.maxHeight = '60px';
+                    
+                    // Увеличиваем z-index, чтобы меню оставалось на виду
+                    bottomNav.style.zIndex = '10000';
+                }
+            } else {
+                // Если клавиатура закрыта, возвращаем нормальный z-index
+                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
+                if (bottomNav) {
+                    bottomNav.style.zIndex = '1000';
+                }
+            }
+            
+            // В любом случае, стабилизируем меню
+            requestAnimationFrame(() => {
+                stabilizeMenus();
+            });
+        };
+
         // Стабилизируем при загрузке
         stabilizeMenus();
 
         // Стабилизируем при изменении размера окна
-        window.addEventListener('resize', stabilizeMenus);
-        window.addEventListener('orientationchange', stabilizeMenus);
+        window.addEventListener('resize', handleViewportChange);
+        window.addEventListener('orientationchange', handleViewportChange);
 
         // Стабилизируем при скролле
         window.addEventListener('scroll', stabilizeMenus, { passive: true });
         
-        // Стабилизируем при изменении viewport
-        window.addEventListener('touchstart', stabilizeMenus, { passive: true });
-        window.addEventListener('touchmove', stabilizeMenus, { passive: true });
+        // Стабилизируем при изменении viewport (включая открытие клавиатуры)
+        window.addEventListener('resize', handleViewportChange);
         
         // Стабилизируем при изменении видимости
         document.addEventListener('visibilitychange', stabilizeMenus);
 
         return () => {
-            window.removeEventListener('resize', stabilizeMenus);
-            window.removeEventListener('orientationchange', stabilizeMenus);
+            window.removeEventListener('resize', handleViewportChange);
+            window.removeEventListener('orientationchange', handleViewportChange);
             window.removeEventListener('scroll', stabilizeMenus);
-            window.removeEventListener('touchstart', stabilizeMenus);
-            window.removeEventListener('touchmove', stabilizeMenus);
             document.removeEventListener('visibilitychange', stabilizeMenus);
         };
     }, []);
