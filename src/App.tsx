@@ -424,141 +424,125 @@ const App: React.FC = () => {
     }, [companyProfileHook.profile?.name]);
 
     useEffect(() => {
-        // Сохраняем исходную высоту viewport для сравнения
-        let initialViewportHeight = window.innerHeight;
-        
-        const stabilizeMenus = () => {
-            // Стабилизируем верхнее меню
-            const appHeader = document.querySelector('.app-header') as HTMLElement;
-            if (appHeader) {
-                // Принудительно устанавливаем стабильную позицию
-                appHeader.style.transform = 'translate3d(0, 0, 0)';
-                appHeader.style.willChange = 'transform';
-                appHeader.style.backfaceVisibility = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Фиксированная высота
-                appHeader.style.height = '64px';
-                appHeader.style.minHeight = '64px';
-                appHeader.style.maxHeight = '64px';
-                
-                // Предотвращаем изменение позиции
-                appHeader.style.position = 'fixed';
-                appHeader.style.top = '0';
-                appHeader.style.left = '0';
-                appHeader.style.right = '0';
-                
-                // Дополнительная стабилизация для iOS
-                appHeader.style.overflow = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-            }
-            
-            // Стабилизируем нижнее меню
+        // Функция обновления высоты viewport (с учетом динамических изменений)
+        const updateVh = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        // Надежная стабилизация нижнего меню
+        const ensureBottomNavPosition = () => {
             const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
             if (bottomNav) {
-                // Принудительно устанавливаем стабильную позицию
+                // Полностью пересчитываем позицию меню
+                bottomNav.style.position = 'fixed';
+                bottomNav.style.bottom = '0';
+                bottomNav.style.left = '0';
+                bottomNav.style.right = '0';
+                bottomNav.style.height = '60px';
+                bottomNav.style.minHeight = '60px';
+                bottomNav.style.maxHeight = '60px';
+                bottomNav.style.zIndex = '10000'; // Максимальный z-index
+                
+                // Принудительно устанавливаем GPU-ускорение
                 bottomNav.style.transform = 'translate3d(0, 0, 0)';
                 bottomNav.style.willChange = 'transform';
                 bottomNav.style.backfaceVisibility = 'hidden';
                 (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
                 (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
                 
-                // Фиксированная высота
-                bottomNav.style.height = '60px';
-                bottomNav.style.minHeight = '60px';
-                bottomNav.style.maxHeight = '60px';
+                // Убираем все возможные конфликты с позиционированием
+                bottomNav.style.top = 'auto';
+                bottomNav.style.marginTop = '0';
+                bottomNav.style.marginBottom = '0';
                 
-                // Предотвращаем изменение позиции
-                bottomNav.style.position = 'fixed';
-                bottomNav.style.bottom = '0';
-                bottomNav.style.left = '0';
-                bottomNav.style.right = '0';
+                // Проверяем, что меню действительно в нижней части экрана
+                const rect = bottomNav.getBoundingClientRect();
+                const expectedBottom = window.innerHeight;
+                const actualBottom = rect.bottom;
                 
-                // Дополнительная стабилизация для iOS
-                bottomNav.style.overflow = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-                
-                // Дополнительно: принудительно устанавливаем z-index выше чем у других элементов
-                bottomNav.style.zIndex = '9999';
-            }
-            
-            // Стабилизируем заголовки экранов
-            const screenHeaders = document.querySelectorAll('.estimate-header, .projects-list-header, .project-detail-header');
-            screenHeaders.forEach(header => {
-                const headerElement = header as HTMLElement;
-                // Принудительно устанавливаем стабильную позицию
-                headerElement.style.transform = 'translate3d(0, 0, 0)';
-                headerElement.style.willChange = 'transform';
-                headerElement.style.backfaceVisibility = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Предотвращаем изменение позиции
-                headerElement.style.position = 'sticky';
-                headerElement.style.top = '0';
-                headerElement.style.left = '0';
-                headerElement.style.right = '0';
-                
-                // Дополнительная стабилизация для iOS
-                headerElement.style.overflow = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-            });
-        };
-
-        // Функция для обработки изменения размера viewport (например, при открытии клавиатуры)
-        const handleViewportChange = () => {
-            const currentHeight = window.innerHeight;
-            const heightDiff = initialViewportHeight - currentHeight;
-            
-            // Если высота изменилась более чем на 150px, вероятно, открылась клавиатура
-            if (Math.abs(heightDiff) > 150) {
-                // Увеличиваем z-index нижнего меню, чтобы оно оставалось поверх клавиатуры
-                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-                if (bottomNav) {
-                    // Устанавливаем высоту, чтобы избежать сдвига
-                    bottomNav.style.height = '60px';
-                    bottomNav.style.minHeight = '60px';
-                    bottomNav.style.maxHeight = '60px';
-                    
-                    // Увеличиваем z-index, чтобы меню оставалось на виду
-                    bottomNav.style.zIndex = '10000';
-                }
-            } else {
-                // Если клавиатура закрыта, возвращаем нормальный z-index
-                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-                if (bottomNav) {
-                    bottomNav.style.zIndex = '1000';
+                // Если меню не находится в самом низу экрана, принудительно корректируем
+                if (Math.abs(expectedBottom - actualBottom) > 5) {
+                    bottomNav.style.bottom = '0';
                 }
             }
-            
-            // В любом случае, стабилизируем меню
-            requestAnimationFrame(() => {
-                stabilizeMenus();
-            });
         };
 
-        // Стабилизируем при загрузке
-        stabilizeMenus();
-
-        // Стабилизируем при изменении размера окна
-        window.addEventListener('resize', handleViewportChange);
-        window.addEventListener('orientationchange', handleViewportChange);
-
-        // Стабилизируем при скролле
-        window.addEventListener('scroll', stabilizeMenus, { passive: true });
+        // Используем ResizeObserver для лучшего отслеживания изменений размера
+        let resizeObserver: ResizeObserver | null = null;
         
-        // Стабилизируем при изменении viewport (включая открытие клавиатуры)
-        window.addEventListener('resize', handleViewportChange);
-        
-        // Стабилизируем при изменении видимости
-        document.addEventListener('visibilitychange', stabilizeMenus);
+        // Функция для проверки и корректировки положения меню
+        const checkAndFixPosition = () => {
+            updateVh(); // Обновляем переменную --vh, когда изменяется высота
+            ensureBottomNavPosition();
+            
+            // Дополнительно убедимся, что основной контейнер правильно отображается
+            const appContainer = document.querySelector('.app-container') as HTMLElement;
+            if (appContainer) {
+                // Убедимся, что используется правильная высота
+                appContainer.style.minHeight = `calc(var(--vh, 1vh) * 100)`;
+            }
+        };
+
+        // Инициализируем при загрузке
+        updateVh();
+        ensureBottomNavPosition();
+
+        // Используем ResizeObserver для отслеживания изменений размера вьюпорта
+        if (window.ResizeObserver) {
+            resizeObserver = new ResizeObserver(() => {
+                checkAndFixPosition();
+            });
+            
+            // Отслеживаем изменения документа (например, при открытии клавиатуры)
+            if (document.documentElement) {
+                resizeObserver.observe(document.documentElement);
+            }
+        }
+
+        // Также отслеживаем классические события
+        window.addEventListener('resize', checkAndFixPosition);
+        window.addEventListener('orientationchange', checkAndFixPosition);
+        window.addEventListener('scroll', checkAndFixPosition, { passive: true });
+        document.addEventListener('visibilitychange', checkAndFixPosition);
+
+        // Периодически проверяем позицию (как дополнительная страховка)
+        const positionCheckInterval = setInterval(checkAndFixPosition, 300);
+
+        // Слушаем специальные события, связанные с виртуальной клавиатурой
+        document.addEventListener('focusin', (e) => {
+            if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                setTimeout(() => {
+                    checkAndFixPosition();
+                }, 300); // Задержка для ожидания открытия клавиатуры
+            }
+        });
+
+        document.addEventListener('focusout', () => {
+            setTimeout(() => {
+                checkAndFixPosition();
+            }, 300); // Задержка для ожидания закрытия клавиатуры
+        });
 
         return () => {
-            window.removeEventListener('resize', handleViewportChange);
-            window.removeEventListener('orientationchange', handleViewportChange);
-            window.removeEventListener('scroll', stabilizeMenus);
-            document.removeEventListener('visibilitychange', stabilizeMenus);
+            if (resizeObserver) {
+                resizeObserver.disconnect();
+            }
+            window.removeEventListener('resize', checkAndFixPosition);
+            window.removeEventListener('orientationchange', checkAndFixPosition);
+            window.removeEventListener('scroll', checkAndFixPosition);
+            document.removeEventListener('visibilitychange', checkAndFixPosition);
+            document.removeEventListener('focusin', () => {
+                setTimeout(() => {
+                    checkAndFixPosition();
+                }, 300);
+            });
+            document.removeEventListener('focusout', () => {
+                setTimeout(() => {
+                    checkAndFixPosition();
+                }, 300);
+            });
+            clearInterval(positionCheckInterval);
         };
     }, []);
 
