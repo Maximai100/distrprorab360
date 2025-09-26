@@ -456,28 +456,34 @@ const App: React.FC = () => {
         const ensureBottomNavPosition = () => {
             const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
             if (bottomNav) {
-                // Полностью пересчитываем позицию меню
-                bottomNav.style.position = 'fixed';
-                bottomNav.style.bottom = '0';
-                bottomNav.style.left = '0';
-                bottomNav.style.right = '0';
-                bottomNav.style.height = '60px';
-                bottomNav.style.minHeight = '60px';
-                bottomNav.style.maxHeight = '60px';
-                bottomNav.style.zIndex = '10000'; // Максимальный z-index
+                // Используем forceApply стили, чтобы переопределить любые другие значения
+                Object.assign(bottomNav.style, {
+                    position: 'fixed !important',
+                    bottom: '0',
+                    left: '0',
+                    right: '0',
+                    height: '60px',
+                    minHeight: '60px',
+                    maxHeight: '60px',
+                    zIndex: '10000', // Максимальный z-index
+                    // GPU ускорение для стабильности
+                    transform: 'translate3d(0, 0, 0)',
+                    willChange: 'transform',
+                    backfaceVisibility: 'hidden',
+                    '-webkit-backfaceVisibility': 'hidden',
+                    '-webkit-transform': 'translate3d(0, 0, 0)',
+                    // Убираем все возможные конфликты
+                    top: 'auto',
+                    marginTop: '0',
+                    // Убираем любые возможные трансформации от анимаций
+                    transition: 'none',
+                    animation: 'none',
+                    // Убедимся, что оно не сдвигается из-за скролла
+                    margin: '0',
+                    padding: '0'
+                } as CSSStyleDeclaration & any);
                 
-                // Принудительно устанавливаем GPU-ускорение
-                bottomNav.style.transform = 'translate3d(0, 0, 0)';
-                bottomNav.style.willChange = 'transform';
-                bottomNav.style.backfaceVisibility = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Убираем все возможные конфликты с позиционированием
-                bottomNav.style.top = 'auto';
-                bottomNav.style.marginTop = '0';
-                
-                // Проверяем, что меню действительно в нижней части экрана
+                // Вторичная проверка и корректировка
                 const rect = bottomNav.getBoundingClientRect();
                 const expectedBottom = window.innerHeight;
                 const actualBottom = rect.bottom;
@@ -485,12 +491,19 @@ const App: React.FC = () => {
                 // Если меню не находится в самом низу экрана, принудительно корректируем
                 if (Math.abs(expectedBottom - actualBottom) > 5) {
                     bottomNav.style.bottom = '0';
+                    bottomNav.style.position = 'fixed';
                 }
             }
         };
 
         // Используем ResizeObserver для лучшего отслеживания изменений размера
         let resizeObserver: ResizeObserver | null = null;
+        
+        // Обработчик для ResizeObserver (отдельная функция для правильной отписки)
+        const handleResizeObserver = () => {
+            updateVh(); // Обновляем переменную --vh, когда изменяется высота
+            ensureBottomNavPosition();
+        };
         
         // Функция для проверки и корректировки положения меню
         const checkAndFixPosition = () => {
@@ -511,9 +524,7 @@ const App: React.FC = () => {
 
         // Используем ResizeObserver для отслеживания изменений размера вьюпорта
         if (window.ResizeObserver) {
-            resizeObserver = new ResizeObserver(() => {
-                checkAndFixPosition();
-            });
+            resizeObserver = new ResizeObserver(handleResizeObserver);
             
             // Отслеживаем изменения документа (например, при открытии клавиатуры)
             if (document.documentElement) {
@@ -524,26 +535,66 @@ const App: React.FC = () => {
         // Также отслеживаем классические события
         window.addEventListener('resize', checkAndFixPosition);
         window.addEventListener('orientationchange', checkAndFixPosition);
-        window.addEventListener('scroll', checkAndFixPosition, { passive: true });
+        // Принудительно отключаем все события прокрутки для стабилизации
+        const handleScroll = () => {
+            // Просто убедимся, что меню на месте
+            setTimeout(ensureBottomNavPosition, 0);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
         document.addEventListener('visibilitychange', checkAndFixPosition);
 
         // Периодически проверяем позицию (как дополнительная страховка)
-        const positionCheckInterval = setInterval(checkAndFixPosition, 300);
+        const positionCheckInterval = setInterval(ensureBottomNavPosition, 200);
 
-        // Слушаем специальные события, связанные с виртуальной клавиатурой
-        document.addEventListener('focusin', (e) => {
-            if (e.target instanceof HTMLElement && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        // Специальная обработка виртуальной клавиатуры
+        const handleFocusIn = (e: Event) => {
+            if (e.target instanceof HTMLElement && 
+                (e.target.tagName === 'INPUT' || 
+                 e.target.tagName === 'TEXTAREA' || 
+                 e.target.tagName === 'SELECT')) {
+                // Увеличиваем частоту проверок при фокусе на инпуты
                 setTimeout(() => {
-                    checkAndFixPosition();
-                }, 300); // Задержка для ожидания открытия клавиатуры
+                    updateVh();
+                    ensureBottomNavPosition();
+                }, 100);
+                
+                // Еще одна проверка через 500мс на случай появления клавиатуры
+                setTimeout(() => {
+                    updateVh();
+                    ensureBottomNavPosition();
+                }, 500);
             }
-        });
+        };
 
-        document.addEventListener('focusout', () => {
+        const handleFocusOut = () => {
+            // Возвращаем обычную частоту проверок
             setTimeout(() => {
-                checkAndFixPosition();
-            }, 300); // Задержка для ожидания закрытия клавиатуры
-        });
+                updateVh();
+                ensureBottomNavPosition();
+            }, 300);
+            
+            // И еще раз через 600мс, на случай скрытия клавиатуры
+            setTimeout(() => {
+                updateVh();
+                ensureBottomNavPosition();
+            }, 600);
+        };
+
+        // Добавляем обработчики фокуса
+        document.addEventListener('focusin', handleFocusIn);
+        document.addEventListener('focusout', handleFocusOut);
+
+        // Также добавляем обработчику touchstart и touchmove для предотвращения смещения
+        const handleTouchStart = () => {
+            setTimeout(ensureBottomNavPosition, 0);
+        };
+        
+        const handleTouchMove = () => {
+            setTimeout(ensureBottomNavPosition, 0);
+        };
+        
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
 
         return () => {
             if (resizeObserver) {
@@ -551,18 +602,12 @@ const App: React.FC = () => {
             }
             window.removeEventListener('resize', checkAndFixPosition);
             window.removeEventListener('orientationchange', checkAndFixPosition);
-            window.removeEventListener('scroll', checkAndFixPosition);
+            window.removeEventListener('scroll', handleScroll);
             document.removeEventListener('visibilitychange', checkAndFixPosition);
-            document.removeEventListener('focusin', () => {
-                setTimeout(() => {
-                    checkAndFixPosition();
-                }, 300);
-            });
-            document.removeEventListener('focusout', () => {
-                setTimeout(() => {
-                    checkAndFixPosition();
-                }, 300);
-            });
+            document.removeEventListener('focusin', handleFocusIn);
+            document.removeEventListener('focusout', handleFocusOut);
+            document.removeEventListener('touchstart', handleTouchStart);
+            document.removeEventListener('touchmove', handleTouchMove);
             clearInterval(positionCheckInterval);
         };
     }, []);

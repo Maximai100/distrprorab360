@@ -1001,6 +1001,54 @@ body .bottom-nav {
   /* Убираем все возможные трансформации */
   top: auto !important;
   margin-top: 0 !important;
+  
+  /* Блокируем любые анимации, которые могут вызвать смещение */
+  transition: none !important;
+  animation: none !important;
+  
+  /* Защита от смещения из-за скролла */
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  
+  /* Убедимся, что элемент не получает фокус, который может вызвать смещение */
+  pointer-events: auto !important;
+}
+
+/* Дополнительная защита для мобильных устройств */
+@media (max-width: 768px) {
+  .bottom-nav {
+    /* Еще более жесткая фиксация для мобильных */
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 10000 !important;
+    
+    /* GPU ускорение для стабильности */
+    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    will-change: transform !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    
+    /* Защита от любых смещений */
+    transform-style: preserve-3d !important;
+    perspective: 1000px !important;
+    
+    /* Убираем любые эффекты перехода */
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Дополнительная защита при работе с формами */
+@media (max-width: 768px) and (orientation: portrait) {
+  /* Когда клавиатура может появиться */
+  body:has(input:focus, textarea:focus, select:focus) .bottom-nav {
+    bottom: 0 !important;
+    position: fixed !important;
+    z-index: 10000 !important;
+  }
 }
 
 /* Дополнительная стабилизация для мобильных устройств */
