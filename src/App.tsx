@@ -66,6 +66,28 @@ import { dataService, storageService } from './services/storageService';
 
 const App: React.FC = () => {
     
+    // --- НАЧАЛО БЛОКА ДЛЯ КОПИРОВАНИЯ ---
+    useEffect(() => {
+        const setVhVariable = () => {
+            // Вычисляем 1% от реальной высоты внутреннего окна
+            let vh = window.innerHeight * 0.01;
+            // Устанавливаем значение переменной --vh для корневого элемента <html>
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        // Устанавливаем значение при первой загрузке
+        setVhVariable();
+
+        // Добавляем слушатель, чтобы обновлять значение при изменении размера окна (например, при повороте экрана)
+        window.addEventListener('resize', setVhVariable);
+
+        // Обязательно очищаем слушатель, когда компонент будет удален
+        return () => {
+            window.removeEventListener('resize', setVhVariable);
+        };
+    }, []); // Пустой массив зависимостей гарантирует, что код выполнится только один раз при монтировании
+    // --- КОНЕЦ БЛОКА ДЛЯ КОПИРОВАНИЯ ---
+    
     // Error boundary state
     const [hasError, setHasError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
