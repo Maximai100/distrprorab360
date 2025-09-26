@@ -46,50 +46,152 @@ html {
     overscroll-behavior-x: none; /* Prevents horizontal swipe gesture */
 }
 
-body {
+html, body, #root {
+    height: 100%;
     margin: 0;
+    padding: 0;
+    overflow: hidden; /* Запрещаем скролл на самом верхнем уровне */
+}
+
+body {
     font-family: var(--font-family);
     background-color: var(--bg-color);
     color: var(--text-color);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s ease, color 0.2s ease;
-    
-    /* Layout and positioning */
-    position: relative;
-    width: 100%;
-    height: var(--app-height); /* Используем стабильную высоту */
-    overflow-y: auto; /* Убедись, что скролл работает */
-    
-    /* Scrolling and overflow */
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    
-    /* Touch and overscroll behavior */
-    touch-action: pan-y; /* Allow only vertical panning */
-    overscroll-behavior-x: none; /* Prevents horizontal swipe gesture */
-    overscroll-behavior-y: auto; /* Allow natural vertical scrolling */
-    
-    /* Убеждаемся что body не влияет на позиционирование нижнего меню */
-    transform: none !important;
 }
 
-.app-container {
+/* Новый, стабильный Flexbox-layout */
+.app-layout {
+    display: flex;
+    flex-direction: column; /* Располагаем элементы вертикально */
+    height: 100%; /* Занимает всю высоту экрана */
+    background-color: var(--bg-color);
     max-width: 600px;
     margin: 0 auto;
-    padding: 16px;
-    padding-top: 80px; /* Space for fixed header */
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Space for fixed bottom nav */
-    min-height: calc(var(--app-height) - 80px - 60px - env(safe-area-inset-bottom)); /* Используем стабильную высоту */
 }
 
-/* Убедимся, что body не влияет на позиционирование */
-body {
-    margin: 0;
-    padding: 0;
-    padding-bottom: 0;
-    margin-bottom: 0;
+.app-header {
+    /* Header больше не fixed. Он просто flex-элемент. */
+    flex-shrink: 0; /* Запрещаем ему сжиматься */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background-color: color-mix(in srgb, var(--bg-color) 90%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    gap: 10px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
 }
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.app-header-right .header-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 6px;
+    color: var(--hint-color);
+    line-height: 1;
+}
+
+.app-header-right .header-btn .icon-wrapper {
+    width: 24px;
+    height: 24px;
+}
+
+.app-logo {
+    height: 50px;
+    width: 50px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.app-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.app-content {
+    /* Это главный контейнер для контента. Он будет скроллиться. */
+    flex-grow: 1; /* Разрешаем ему растягиваться и занимать все свободное место */
+    overflow-y: auto; /* Включаем вертикальный скролл ТОЛЬКО для этого блока */
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    padding: 16px; /* Добавляем внутренние отступы для контента */
+    min-height: 0; /* Важно для правильной работы flexbox */
+}
+
+.bottom-nav {
+    /* Nav больше не fixed. Он просто flex-элемент. */
+    flex-shrink: 0; /* Запрещаем ему сжиматься */
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--secondary-bg-color);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+}
+
+.bottom-nav button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-grow: 1;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--hint-color);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.bottom-nav button .icon {
+    font-size: 24px;
+}
+
+.bottom-nav button .icon-wrapper {
+    width: 24px;
+    height: 24px;
+}
+
+.bottom-nav button.active {
+    color: var(--link-color);
+}
+
+body.dark-theme .bottom-nav {
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+}
+
+
 
 header {
     display: flex;
@@ -956,136 +1058,8 @@ body.dark-theme .btn-ai {
 
 /* --- NEW PROJECT & NAVIGATION STYLES --- */
 
-/* 
- * Принудительная фиксация нижнего меню.
- * Мы используем селектор `body .bottom-nav`, чтобы повысить его специфичность.
- * Мы добавляем `!important` к ключевым свойствам, чтобы гарантировать,
- * что их не переопределит никакое другое правило.
- */
-body .bottom-nav {
-  /* Принудительно фиксируем позицию */
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  transform: none !important;
-  width: 100% !important;
-  max-width: 600px !important;
-  z-index: 1000 !important;
 
-  /* Принудительно убираем все transform кроме центрирования */
-  -webkit-transform: none !important;
-  will-change: auto !important;
-  backface-visibility: visible !important;
-  -webkit-backface-visibility: visible !important;
-  
-  /* Стабильные размеры */
-  height: 60px !important;
-  min-height: 60px !important;
-  max-height: 60px !important;
-  
-  /* Остальные стили для сохранения внешнего вида */
-  display: flex !important;
-  justify-content: space-around !important;
-  background-color: var(--secondary-bg-color) !important;
-  border-top: 1px solid var(--border-color) !important;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
-  padding: 8px 0 !important;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
-  overflow: hidden !important;
-  
-  /* Принудительная перерисовка */
-  contain: layout style paint;
-  isolation: isolate;
-}
 
-/* Дополнительная стабилизация для мобильных устройств */
-@media (max-width: 768px) {
-    .bottom-nav {
-        /* Сохраняем центрирование через transform */
-        transform: none !important;
-        -webkit-transform: none !important;
-        will-change: auto !important;
-        /* Убедимся, что элемент рендерится в отдельном слое */
-        z-index: 9999 !important;
-        /* Убираем backface-visibility, чтобы избежать конфликтов */
-        backface-visibility: visible !important;
-        -webkit-backface-visibility: visible !important;
-        perspective: none !important;
-    }
-}
-body.dark-theme .bottom-nav {
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-}
-
-/* Дополнительная стабилизация для мобильных устройств при открытии клавиатуры */
-@media screen and (max-height: 500px) {
-    .bottom-nav {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-  right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-        transform: none !important;
-        width: 100% !important;
-        max-width: 600px !important;
-        height: 60px !important;
-        min-height: 60px !important;
-        max-height: 60px !important;
-        z-index: 10000 !important;
-        
-        /* Сохраняем центрирование через transform */
-        -webkit-transform: none !important;
-        will-change: auto !important;
-        backface-visibility: visible !important;
-        -webkit-backface-visibility: visible !important;
-    }
-    
-    .app-header {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 64px !important;
-        min-height: 64px !important;
-        max-height: 64px !important;
-        z-index: 10000 !important;
-        
-        /* Принудительно сбрасываем transform при работе с клавиатурой */
-        transform: none !important;
-        -webkit-transform: none !important;
-        will-change: auto !important;
-        backface-visibility: visible !important;
-        -webkit-backface-visibility: visible !important;
-    }
-}
-.bottom-nav button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    flex-grow: 1;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: var(--hint-color);
-    font-family: inherit;
-    font-size: 12px;
-}
-.bottom-nav button .icon {
-    font-size: 24px;
-}
-.bottom-nav button .icon-wrapper {
-    width: 24px;
-    height: 24px;
-}
-.bottom-nav button.active {
-    color: var(--link-color);
-}
 
 /* Project List Screen */
 .project-filters {
@@ -1722,90 +1696,7 @@ input[type=number] { -moz-appearance: textfield; }
     }
 }
 
-/* Радикальная стабилизация меню - принудительное позиционирование */
-.app-header {
-    /* Принудительно фиксируем позицию */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 500 !important;
-    
-    /* Принудительно убираем все transform */
-    transform: none !important;
-    -webkit-transform: none !important;
-    will-change: auto !important;
-    backface-visibility: visible !important;
-    -webkit-backface-visibility: visible !important;
-    
-    /* Стабильные размеры */
-    height: 64px !important;
-    min-height: 64px !important;
-    max-height: 64px !important;
-    
-    /* Базовые стили */
-    max-width: 600px;
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background-color: color-mix(in srgb, var(--bg-color) 90%, transparent);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
-    gap: 10px;
-    flex-shrink: 0;
-    
-    /* Принудительная перерисовка */
-    contain: layout style paint;
-    isolation: isolate;
-}
 
-.app-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-}
-
-.app-header-right {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    flex-shrink: 0;
-}
-
-.app-header-right .header-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 24px;
-    padding: 6px;
-    color: var(--hint-color);
-    line-height: 1;
-}
-
-.app-header-right .header-btn .icon-wrapper {
-    width: 24px;
-    height: 24px;
-}
-
-.app-logo {
-    height: 50px;
-    width: 50px;
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-
-.app-header h1 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 
 /* Workspace View */
 .workspace-container {
@@ -2439,38 +2330,6 @@ input[type=number] { -moz-appearance: textfield; }
         -webkit-overflow-scrolling: touch;
     }
     
-    /* Дополнительная стабилизация при работе с клавиатурой */
-    input:focus,
-    textarea:focus,
-    select:focus {
-        /* Стабилизируем меню при фокусе на поле ввода */
-        transform: none !important;
-    }
-    
-    /* Принудительная стабилизация меню после закрытия клавиатуры */
-    body.keyboard-closed .app-header {
-        transform: none !important;
-        -webkit-transform: none !important;
-        position: fixed !important;
-    }
-    
-    body.keyboard-closed .bottom-nav {
-        transform: none !important;
-        -webkit-transform: none !important;
-        position: fixed !important;
-    }
-    
-    body.keyboard-closed .app-header {
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-    }
-    
-    body.keyboard-closed .bottom-nav {
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-    }
 }
 
 /* Tabs */
@@ -3226,177 +3085,6 @@ input[type=number] { -moz-appearance: textfield; }
         -webkit-overflow-scrolling: touch !important;
     }
     
-    /* Исправление проблемы с "прыгающим" нижним меню в мобильной версии */
-@media (max-width: 768px) {
-    /* Убираем фиксированное позиционирование body, чтобы избежать конфликтов */
-    body {
-        position: relative;
-        width: 100%;
-        height: var(--app-height); /* Используем стабильную высоту */
-        overflow-x: hidden;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Контейнер приложения с правильным позиционированием */
-    .app-container {
-        position: relative;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 16px;
-        padding-top: 80px; /* Space for fixed header */
-        padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Space for fixed bottom nav */
-        min-height: calc(var(--app-height) - 80px - 60px - env(safe-area-inset-bottom)); /* Используем стабильную высоту */
-        /* Убираем фиксированное позиционирование, чтобы избежать конфликтов со скроллом */
-        transform: none;
-        will-change: auto;
-        backface-visibility: visible;
-        -webkit-backface-visibility: visible;
-    }
-    
-    /* Дополнительная стабилизация для верхнего и нижнего меню */
-    .app-header {
-        /* Убираем transform, чтобы избежать конфликтов со скроллом */
-        transform: none !important;
-        /* Предотвращаем изменение позиции при скролле */
-        position: fixed !important;
-        top: 0 !important;
-        /* Стабильная высота */
-        height: 64px !important;
-        min-height: 64px !important;
-        max-height: 64px !important;
-        
-        /* Убираем дополнительные transform для мобильных */
-        -webkit-transform: none !important;
-        will-change: auto !important;
-        backface-visibility: visible !important;
-        -webkit-backface-visibility: visible !important;
-        
-        /* Предотвращаем "прыжки" при скролле */
-        overflow: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    .bottom-nav {
-        /* Сохраняем центрирование через transform */
-        transform: none !important;
-        /* Предотвращаем изменение позиции при скролле */
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-  right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-        width: 100% !important;
-        max-width: 600px !important;
-        /* Стабильная высота */
-        height: 60px !important;
-        min-height: 60px !important;
-        max-height: 60px !important;
-        
-        /* Убираем дополнительные transform для мобильных */
-        -webkit-transform: none !important;
-        will-change: auto !important;
-        backface-visibility: visible !important;
-        -webkit-backface-visibility: visible !important;
-        
-        /* Предотвращаем "прыжки" при скролле */
-        overflow: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    /* Специальные стили для iOS Safari */
-    @supports (-webkit-touch-callout: none) {
-        .app-header {
-            /* Убираем transform для iOS, чтобы избежать конфликтов со скроллом */
-            -webkit-transform: none !important;
-            transform: none !important;
-            will-change: auto !important;
-            backface-visibility: visible !important;
-            -webkit-backface-visibility: visible !important;
-            
-            /* Фиксированная позиция */
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            
-            /* Стабильная высота */
-            height: 64px !important;
-            min-height: 64px !important;
-            max-height: 64px !important;
-        }
-        
-        .bottom-nav {
-            /* Сохраняем центрирование через transform для iOS */
-            -webkit-transform: none !important;
-            transform: none !important;
-            will-change: auto !important;
-            backface-visibility: visible !important;
-            -webkit-backface-visibility: visible !important;
-            
-            /* Фиксированная позиция */
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-  right: 0 !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-            width: 100% !important;
-            max-width: 600px !important;
-            
-            /* Стабильная высота */
-            height: 60px !important;
-            min-height: 60px !important;
-            max-height: 60px !important;
-        }
-        
-        /* Дополнительная стабилизация заголовков для iOS */
-        .estimate-header,
-        .projects-list-header,
-        .project-detail-header {
-            /* Убираем transform для iOS, чтобы избежать конфликтов со скроллом */
-            -webkit-transform: none !important;
-            transform: none !important;
-            will-change: auto !important;
-            backface-visibility: visible !important;
-            -webkit-backface-visibility: visible !important;
-            
-            /* Фиксированная позиция */
-            position: sticky !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-        }
-    }
-    
-    /* Исправление для модального окна заявки поставщику */
-    .modal-content {
-        max-height: 85vh !important;
-        /* Убеждаемся что footer всегда виден */
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    
-    .modal-body {
-        /* Ограничиваем высоту body чтобы footer поместился */
-        max-height: calc(85vh - 120px) !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    .modal-footer {
-        /* Фиксируем footer внизу модального окна */
-        position: sticky !important;
-        bottom: 0 !important;
-        background-color: var(--card-bg-color) !important;
-        border-top: 1px solid var(--border-color) !important;
-        padding: 16px !important;
-        margin-top: 0 !important;
-        flex-shrink: 0 !important;
-        z-index: 10 !important;
-    }
-}
 
 .photo-viewer-actions {
     display: flex;
@@ -3431,31 +3119,3 @@ input[type=number] { -moz-appearance: textfield; }
     color: white;
 }
 
-/* Основная область контента */
-main {
-    /* Убираем overflow-y: auto, чтобы избежать конфликтов с body скроллом */
-    padding-top: 0;
-    padding-bottom: 60px; /* Отступ, равный высоте нижнего меню */
-    -webkit-overflow-scrolling: touch; /* Для плавности скролла на iOS */
-}
-
-/* 
- * Добавляем отступы для учёта зафиксированных элементов при скролле.
- * Это нужно для того, чтобы контент не скрывался за шапкой или нижним меню.
- */
-main > *:first-child {
-    margin-top: 0;
-    padding-top: 16px; /* Добавляем отступ сверху для видимости контента */
-}
-
-/* Для мобильных устройств - дополнительная стабилизация */
-@media (max-width: 768px) {
-    .app-container {
-        /* Убираем высоту 100vh, чтобы не конфликтовать с фиксированными элементами */
-    }
-    
-    main {
-        /* Убираем overflow-y: auto, чтобы избежать конфликтов с body скроллом */
-        -webkit-overflow-scrolling: touch; /* Улучшаем скролл на iOS */
-    }
-}
