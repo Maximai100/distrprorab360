@@ -46,51 +46,152 @@ html {
     overscroll-behavior-x: none; /* Prevents horizontal swipe gesture */
 }
 
-body {
+html, body, #root {
+    height: 100%;
     margin: 0;
+    padding: 0;
+    overflow: hidden; /* Запрещаем скролл на самом верхнем уровне */
+}
+
+body {
     font-family: var(--font-family);
     background-color: var(--bg-color);
     color: var(--text-color);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.2s ease, color 0.2s ease;
-    
-    /* Layout and positioning */
-    position: relative;
-    width: 100%;
-    min-height: 100vh;
-    min-height: calc(var(--vh, 1vh) * 100);
-    
-    /* Scrolling and overflow */
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    
-    /* Touch and overscroll behavior */
-    touch-action: pan-y; /* Allow only vertical panning */
-    overscroll-behavior-x: none; /* Prevents horizontal swipe gesture */
-    overscroll-behavior-y: auto; /* Allow natural vertical scrolling */
-    
-    /* Убеждаемся что body не влияет на позиционирование нижнего меню */
-    transform: none !important;
 }
 
-.app-container {
+/* Новый, стабильный Flexbox-layout */
+.app-layout {
+    display: flex;
+    flex-direction: column; /* Располагаем элементы вертикально */
+    height: 100%; /* Занимает всю высоту экрана */
+    background-color: var(--bg-color);
     max-width: 600px;
     margin: 0 auto;
-    padding: 16px;
-    padding-top: 80px; /* Space for fixed header */
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Space for fixed bottom nav */
-    min-height: calc(100vh - 80px - 60px - env(safe-area-inset-bottom)); /* Учитываем высоту фиксированных элементов */
 }
 
-/* Убедимся, что body не влияет на позиционирование */
-body {
-    margin: 0;
-    padding: 0;
-    padding-bottom: 0;
-    margin-bottom: 0;
+.app-header {
+    /* Header больше не fixed. Он просто flex-элемент. */
+    flex-shrink: 0; /* Запрещаем ему сжиматься */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background-color: color-mix(in srgb, var(--bg-color) 90%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    gap: 10px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
 }
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+}
+
+.app-header-right .header-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    padding: 6px;
+    color: var(--hint-color);
+    line-height: 1;
+}
+
+.app-header-right .header-btn .icon-wrapper {
+    width: 24px;
+    height: 24px;
+}
+
+.app-logo {
+    height: 50px;
+    width: 50px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.app-header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.app-content {
+    /* Это главный контейнер для контента. Он будет скроллиться. */
+    flex-grow: 1; /* Разрешаем ему растягиваться и занимать все свободное место */
+    overflow-y: auto; /* Включаем вертикальный скролл ТОЛЬКО для этого блока */
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    padding: 16px; /* Добавляем внутренние отступы для контента */
+    min-height: 0; /* Важно для правильной работы flexbox */
+}
+
+.bottom-nav {
+    /* Nav больше не fixed. Он просто flex-элемент. */
+    flex-shrink: 0; /* Запрещаем ему сжиматься */
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--secondary-bg-color);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+}
+
+.bottom-nav button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-grow: 1;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: var(--hint-color);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.bottom-nav button .icon {
+    font-size: 24px;
+}
+
+.bottom-nav button .icon-wrapper {
+    width: 24px;
+    height: 24px;
+}
+
+.bottom-nav button.active {
+    color: var(--link-color);
+}
+
+body.dark-theme .bottom-nav {
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+}
+
+
 
 header {
     display: flex;
@@ -112,12 +213,12 @@ header {
     margin: -16px -16px 16px -16px; /* Adjust for container padding */
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     
-    /* Критически важные стили для стабилизации на мобильных */
-    transform: translate3d(0, 0, 0) !important;
-    will-change: transform !important;
-    backface-visibility: hidden !important;
-    -webkit-backface-visibility: hidden !important;
-    -webkit-transform: translate3d(0, 0, 0) !important;
+    /* Убираем transform, чтобы избежать конфликтов со скроллом */
+    transform: none !important;
+    will-change: auto !important;
+    backface-visibility: visible !important;
+    -webkit-backface-visibility: visible !important;
+    -webkit-transform: none !important;
     
     /* Дополнительная стабилизация для iOS */
     -webkit-overflow-scrolling: touch;
@@ -956,99 +1057,6 @@ body.dark-theme .btn-ai {
 
 
 /* --- NEW PROJECT & NAVIGATION STYLES --- */
-
-/* 
- * Принудительная фиксация нижнего меню.
- * Мы используем селектор `body .bottom-nav`, чтобы повысить его специфичность.
- * Мы добавляем `!important` к ключевым свойствам, чтобы гарантировать,
- * что их не переопределит никакое другое правило.
- */
-body .bottom-nav {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 1000 !important;
-
-  /* Убедимся, что никакие другие свойства не мешают */
-  transform: none !important; 
-  
-  /* Остальные стили для сохранения внешнего вида */
-  display: flex !important;
-  justify-content: space-around !important;
-  background-color: var(--secondary-bg-color) !important;
-  border-top: 1px solid var(--border-color) !important;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
-  max-width: 600px !important;
-  margin: 0 auto !important;
-  height: 60px !important;
-  padding: 8px 0 !important;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
-  -webkit-overflow-scrolling: touch !important;
-  overflow: hidden !important;
-  
-  /* Добавляем стиль для предотвращения смещения на мобильных устройствах */
-  -webkit-transform: translateZ(0) !important;
-  transform: translateZ(0) !important;
-}
-
-/* Дополнительная стабилизация для мобильных устройств */
-@media (max-width: 768px) {
-    .bottom-nav {
-        /* Дополнительная фиксация позиции для предотвращения смещения */
-        transform: translate3d(0, 0, 0) !important;
-        -webkit-transform: translate3d(0, 0, 0) !important;
-        will-change: transform !important;
-        /* Убедимся, что элемент рендерится в отдельном слое */
-        z-index: 9999 !important;
-        /* Добавляем стабилизацию для предотвращения смещения */
-        backface-visibility: hidden !important;
-        -webkit-backface-visibility: hidden !important;
-        perspective: 1000px !important;
-    }
-}
-body.dark-theme .bottom-nav {
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-}
-
-/* Дополнительная стабилизация для мобильных устройств при открытии клавиатуры */
-@media screen and (max-height: 500px) {
-    .bottom-nav {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        height: 60px !important;
-        min-height: 60px !important;
-        max-height: 60px !important;
-        z-index: 10000 !important;
-    }
-}
-.bottom-nav button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    flex-grow: 1;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: var(--hint-color);
-    font-family: inherit;
-    font-size: 12px;
-}
-.bottom-nav button .icon {
-    font-size: 24px;
-}
-.bottom-nav button .icon-wrapper {
-    width: 24px;
-    height: 24px;
-}
-.bottom-nav button.active {
-    color: var(--link-color);
-}
-
 /* Project List Screen */
 .project-filters {
     margin-bottom: 16px;
@@ -1684,88 +1692,7 @@ input[type=number] { -moz-appearance: textfield; }
     }
 }
 
-.app-header {
-    max-width: 600px; /* Match app container */
-    margin: 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    background-color: color-mix(in srgb, var(--bg-color) 90%, transparent);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
-    gap: 10px;
-    z-index: 500;
-    height: 64px; /* Fixed height */
-    flex-shrink: 0; /* Не сжимаем заголовок */
-    
-    /* Критически важные стили для стабилизации на мобильных */
-    transform: translate3d(0, 0, 0) !important;
-    will-change: transform !important;
-    backface-visibility: hidden !important;
-    -webkit-backface-visibility: hidden !important;
-    -webkit-transform: translate3d(0, 0, 0) !important;
-    
-    /* Стабильная высота и предотвращение "прыжков" */
-    min-height: 64px !important;
-    max-height: 64px !important;
-    
-    /* Дополнительная стабилизация для iOS */
-    -webkit-overflow-scrolling: touch;
-    overflow: hidden;
-    
-    /* Фиксируем шапку вверху */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-}
 
-.app-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    overflow: hidden;
-}
-
-.app-header-right {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    flex-shrink: 0;
-}
-
-.app-header-right .header-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 24px;
-    padding: 6px;
-    color: var(--hint-color);
-    line-height: 1;
-}
-
-.app-header-right .header-btn .icon-wrapper {
-    width: 24px;
-    height: 24px;
-}
-
-.app-logo {
-    height: 50px;
-    width: 50px;
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-
-.app-header h1 {
-    font-size: 18px;
-    font-weight: 600;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 
 /* Workspace View */
 .workspace-container {
@@ -2398,6 +2325,7 @@ input[type=number] { -moz-appearance: textfield; }
     body {
         -webkit-overflow-scrolling: touch;
     }
+    
 }
 
 /* Tabs */
@@ -3153,166 +3081,6 @@ input[type=number] { -moz-appearance: textfield; }
         -webkit-overflow-scrolling: touch !important;
     }
     
-    /* Исправление проблемы с "прыгающим" нижним меню в мобильной версии */
-@media (max-width: 768px) {
-    /* Предотвращаем изменение высоты viewport при работе с модальными окнами */
-    body {
-        position: fixed;
-        width: 100%;
-        height: 100vh;
-        overflow: hidden;
-    }
-    
-    /* Контейнер приложения с прокруткой */
-    .app-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: touch;
-        /* Исправляем проблему с "прыгающим" меню */
-        transform: translateZ(0);
-        will-change: transform;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-    }
-    
-    /* Дополнительная стабилизация для верхнего и нижнего меню */
-    .app-header {
-        /* Принудительно используем GPU для рендеринга */
-        transform: translate3d(0, 0, 0) !important;
-        /* Предотвращаем изменение позиции при скролле */
-        position: fixed !important;
-        top: 0 !important;
-        /* Стабильная высота */
-        height: 64px !important;
-        min-height: 64px !important;
-        max-height: 64px !important;
-        
-        /* Дополнительная стабилизация для мобильных */
-        -webkit-transform: translate3d(0, 0, 0) !important;
-        will-change: transform !important;
-        backface-visibility: hidden !important;
-        -webkit-backface-visibility: hidden !important;
-        
-        /* Предотвращаем "прыжки" при скролле */
-        overflow: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    .bottom-nav {
-        /* Принудительно используем GPU для рендеринга */
-        transform: translate3d(0, 0, 0) !important;
-        /* Предотвращаем изменение позиции при скролле */
-        position: fixed !important;
-        bottom: 0 !important;
-        /* Стабильная высота */
-        height: 60px !important;
-        min-height: 60px !important;
-        max-height: 60px !important;
-        
-        /* Дополнительная стабилизация для мобильных */
-        -webkit-transform: translate3d(0, 0, 0) !important;
-        will-change: transform !important;
-        backface-visibility: hidden !important;
-        -webkit-backface-visibility: hidden !important;
-        
-        /* Предотвращаем "прыжки" при скролле */
-        overflow: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    /* Специальные стили для iOS Safari */
-    @supports (-webkit-touch-callout: none) {
-        .app-header {
-            /* Дополнительная стабилизация для iOS */
-            -webkit-transform: translate3d(0, 0, 0) !important;
-            transform: translate3d(0, 0, 0) !important;
-            will-change: transform !important;
-            backface-visibility: hidden !important;
-            -webkit-backface-visibility: hidden !important;
-            
-            /* Фиксированная позиция */
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            
-            /* Стабильная высота */
-            height: 64px !important;
-            min-height: 64px !important;
-            max-height: 64px !important;
-        }
-        
-        .bottom-nav {
-            /* Дополнительная стабилизация для iOS */
-            -webkit-transform: translate3d(0, 0, 0) !important;
-            transform: translate3d(0, 0, 0) !important;
-            will-change: transform !important;
-            backface-visibility: hidden !important;
-            -webkit-backface-visibility: hidden !important;
-            
-            /* Фиксированная позиция */
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            
-            /* Стабильная высота */
-            height: 60px !important;
-            min-height: 60px !important;
-            max-height: 60px !important;
-        }
-        
-        /* Дополнительная стабилизация заголовков для iOS */
-        .estimate-header,
-        .projects-list-header,
-        .project-detail-header {
-            /* Дополнительная стабилизация для iOS */
-            -webkit-transform: translate3d(0, 0, 0) !important;
-            transform: translate3d(0, 0, 0) !important;
-            will-change: transform !important;
-            backface-visibility: hidden !important;
-            -webkit-backface-visibility: hidden !important;
-            
-            /* Фиксированная позиция */
-            position: sticky !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-        }
-    }
-    
-    /* Исправление для модального окна заявки поставщику */
-    .modal-content {
-        max-height: 85vh !important;
-        /* Убеждаемся что footer всегда виден */
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    
-    .modal-body {
-        /* Ограничиваем высоту body чтобы footer поместился */
-        max-height: calc(85vh - 120px) !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-    }
-    
-    .modal-footer {
-        /* Фиксируем footer внизу модального окна */
-        position: sticky !important;
-        bottom: 0 !important;
-        background-color: var(--card-bg-color) !important;
-        border-top: 1px solid var(--border-color) !important;
-        padding: 16px !important;
-        margin-top: 0 !important;
-        flex-shrink: 0 !important;
-        z-index: 10 !important;
-    }
-}
 
 .photo-viewer-actions {
     display: flex;
@@ -3347,30 +3115,3 @@ input[type=number] { -moz-appearance: textfield; }
     color: white;
 }
 
-/* Основная область контента */
-main {
-    overflow-y: auto; /* Разрешаем вертикальный скролл */
-    padding-top: 0;
-    padding-bottom: 60px; /* Отступ, равный высоте нижнего меню */
-    -webkit-overflow-scrolling: touch; /* Для плавности скролла на iOS */
-}
-
-/* 
- * Добавляем отступы для учёта зафиксированных элементов при скролле.
- * Это нужно для того, чтобы контент не скрывался за шапкой или нижним меню.
- */
-main > *:first-child {
-    margin-top: 0;
-    padding-top: 16px; /* Добавляем отступ сверху для видимости контента */
-}
-
-/* Для мобильных устройств - дополнительная стабилизация */
-@media (max-width: 768px) {
-    .app-container {
-        /* Убираем высоту 100vh, чтобы не конфликтовать с фиксированными элементами */
-    }
-    
-    main {
-        -webkit-overflow-scrolling: touch; /* Улучшаем скролл на iOS */
-    }
-}

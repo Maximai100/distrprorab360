@@ -62,9 +62,12 @@ import { useInventory } from './hooks/useInventory';
 import { useNotes } from './hooks/useNotes';
 import { useTasks } from './hooks/useTasks';
 import { useFileStorage } from './hooks/useFileStorage';
+import { useViewportHeight } from './hooks/useViewportHeight';
 import { dataService, storageService } from './services/storageService';
 
 const App: React.FC = () => {
+    // Вызываем хук. Он автоматически установит CSS-переменную --app-height
+    useViewportHeight();
     
     // Error boundary state
     const [hasError, setHasError] = useState(false);
@@ -424,141 +427,40 @@ const App: React.FC = () => {
     }, [companyProfileHook.profile?.name]);
 
     useEffect(() => {
-        // Сохраняем исходную высоту viewport для сравнения
-        let initialViewportHeight = window.innerHeight;
-        
+        // Простая стабилизация меню - полагаемся на CSS !important правила
         const stabilizeMenus = () => {
-            // Стабилизируем верхнее меню
             const appHeader = document.querySelector('.app-header') as HTMLElement;
-            if (appHeader) {
-                // Принудительно устанавливаем стабильную позицию
-                appHeader.style.transform = 'translate3d(0, 0, 0)';
-                appHeader.style.willChange = 'transform';
-                appHeader.style.backfaceVisibility = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Фиксированная высота
-                appHeader.style.height = '64px';
-                appHeader.style.minHeight = '64px';
-                appHeader.style.maxHeight = '64px';
-                
-                // Предотвращаем изменение позиции
-                appHeader.style.position = 'fixed';
-                appHeader.style.top = '0';
-                appHeader.style.left = '0';
-                appHeader.style.right = '0';
-                
-                // Дополнительная стабилизация для iOS
-                appHeader.style.overflow = 'hidden';
-                (appHeader.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-            }
-            
-            // Стабилизируем нижнее меню
             const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-            if (bottomNav) {
-                // Принудительно устанавливаем стабильную позицию
-                bottomNav.style.transform = 'translate3d(0, 0, 0)';
-                bottomNav.style.willChange = 'transform';
-                bottomNav.style.backfaceVisibility = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Фиксированная высота
-                bottomNav.style.height = '60px';
-                bottomNav.style.minHeight = '60px';
-                bottomNav.style.maxHeight = '60px';
-                
-                // Предотвращаем изменение позиции
-                bottomNav.style.position = 'fixed';
-                bottomNav.style.bottom = '0';
-                bottomNav.style.left = '0';
-                bottomNav.style.right = '0';
-                
-                // Дополнительная стабилизация для iOS
-                bottomNav.style.overflow = 'hidden';
-                (bottomNav.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-                
-                // Дополнительно: принудительно устанавливаем z-index выше чем у других элементов
-                bottomNav.style.zIndex = '9999';
+            
+            if (appHeader) {
+                // Только убираем transform, остальное делает CSS
+                appHeader.style.transform = 'none';
+                appHeader.style.webkitTransform = 'none';
             }
             
-            // Стабилизируем заголовки экранов
-            const screenHeaders = document.querySelectorAll('.estimate-header, .projects-list-header, .project-detail-header');
-            screenHeaders.forEach(header => {
-                const headerElement = header as HTMLElement;
-                // Принудительно устанавливаем стабильную позицию
-                headerElement.style.transform = 'translate3d(0, 0, 0)';
-                headerElement.style.willChange = 'transform';
-                headerElement.style.backfaceVisibility = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitBackfaceVisibility = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitBackfaceVisibility?: string; webkitTransform?: string }).webkitTransform = 'translate3d(0, 0, 0)';
-                
-                // Предотвращаем изменение позиции
-                headerElement.style.position = 'sticky';
-                headerElement.style.top = '0';
-                headerElement.style.left = '0';
-                headerElement.style.right = '0';
-                
-                // Дополнительная стабилизация для iOS
-                headerElement.style.overflow = 'hidden';
-                (headerElement.style as CSSStyleDeclaration & { webkitOverflowScrolling?: string }).webkitOverflowScrolling = 'touch';
-            });
+            if (bottomNav) {
+                // Для bottom-nav убираем transform, используем margin: auto
+                bottomNav.style.transform = 'none';
+                bottomNav.style.webkitTransform = 'none';
+            }
         };
 
-        // Функция для обработки изменения размера viewport (например, при открытии клавиатуры)
+        // Стабилизируем только при изменении размера окна (клавиатура)
         const handleViewportChange = () => {
-            const currentHeight = window.innerHeight;
-            const heightDiff = initialViewportHeight - currentHeight;
-            
-            // Если высота изменилась более чем на 150px, вероятно, открылась клавиатура
-            if (Math.abs(heightDiff) > 150) {
-                // Увеличиваем z-index нижнего меню, чтобы оно оставалось поверх клавиатуры
-                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-                if (bottomNav) {
-                    // Устанавливаем высоту, чтобы избежать сдвига
-                    bottomNav.style.height = '60px';
-                    bottomNav.style.minHeight = '60px';
-                    bottomNav.style.maxHeight = '60px';
-                    
-                    // Увеличиваем z-index, чтобы меню оставалось на виду
-                    bottomNav.style.zIndex = '10000';
-                }
-            } else {
-                // Если клавиатура закрыта, возвращаем нормальный z-index
-                const bottomNav = document.querySelector('.bottom-nav') as HTMLElement;
-                if (bottomNav) {
-                    bottomNav.style.zIndex = '1000';
-                }
-            }
-            
-            // В любом случае, стабилизируем меню
-            requestAnimationFrame(() => {
+            setTimeout(() => {
                 stabilizeMenus();
-            });
+            }, 100);
         };
 
         // Стабилизируем при загрузке
         stabilizeMenus();
 
-        // Стабилизируем при изменении размера окна
         window.addEventListener('resize', handleViewportChange);
         window.addEventListener('orientationchange', handleViewportChange);
-
-        // Стабилизируем при скролле
-        window.addEventListener('scroll', stabilizeMenus, { passive: true });
-        
-        // Стабилизируем при изменении viewport (включая открытие клавиатуры)
-        window.addEventListener('resize', handleViewportChange);
-        
-        // Стабилизируем при изменении видимости
-        document.addEventListener('visibilitychange', stabilizeMenus);
 
         return () => {
             window.removeEventListener('resize', handleViewportChange);
             window.removeEventListener('orientationchange', handleViewportChange);
-            window.removeEventListener('scroll', stabilizeMenus);
-            document.removeEventListener('visibilitychange', stabilizeMenus);
         };
     }, []);
 
@@ -1623,141 +1525,141 @@ const App: React.FC = () => {
 
     return (
         <ProjectProvider>
-            <div className="app-container">
+            <div className="app-layout">
                 {/* Auth gate */}
                 {(!session) ? (
-                    <main>
+                    <main className="app-content">
                         <AuthScreen />
                     </main>
                 ) : (
                 <>
                 {/* Global Header */}
-            <header className="app-header">
-                <div className="app-header-left">
-                    <img
-                        src={(() => {
-                            const logoUrl = companyProfileHook.profile.logo;
+                <header className="app-header">
+                    <div className="app-header-left">
+                        <img
+                            src={(() => {
+                                const logoUrl = companyProfileHook.profile.logo;
 
-                            if (!logoUrl) {
+                                if (!logoUrl) {
 
-                                return '/logo.png';
-                            }
-                            
-                            // Проверяем, не содержит ли URL multipart/form-data
-                            if (logoUrl.includes('multipart') || logoUrl.includes('form-data')) {
-                                console.error('❌ Обнаружен неправильный URL с multipart/form-data в шапке:', logoUrl);
-                                console.error('❌ Используем fallback логотип');
-                                return '/logo.png';
-                            }
+                                    return '/logo.png';
+                                }
+                                
+                                // Проверяем, не содержит ли URL multipart/form-data
+                                if (logoUrl.includes('multipart') || logoUrl.includes('form-data')) {
+                                    console.error('❌ Обнаружен неправильный URL с multipart/form-data в шапке:', logoUrl);
+                                    console.error('❌ Используем fallback логотип');
+                                    return '/logo.png';
+                                }
 
-                            return logoUrl;
-                        })()}
-                        alt="Логотип"
-                        className="app-logo"
-                        onError={(e) => {
-                            const currentSrc = e.currentTarget.src;
-                            
-                            // Проверяем, не является ли это ложным срабатыванием
-                            if (currentSrc.includes('multipart') || currentSrc.includes('form-data')) {
+                                return logoUrl;
+                            })()}
+                            alt="Логотип"
+                            className="app-logo"
+                            onError={(e) => {
+                                const currentSrc = e.currentTarget.src;
+                                
+                                // Проверяем, не является ли это ложным срабатыванием
+                                if (currentSrc.includes('multipart') || currentSrc.includes('form-data')) {
+                                    (e.currentTarget as HTMLImageElement).src = '/logo.png';
+                                    return;
+                                }
+                                
+                                // Проверяем, не является ли это уже fallback логотипом
+                                if (currentSrc.includes('/logo.png')) {
+                                    return;
+                                }
+                                
                                 (e.currentTarget as HTMLImageElement).src = '/logo.png';
-                                return;
-                            }
-                            
-                            // Проверяем, не является ли это уже fallback логотипом
-                            if (currentSrc.includes('/logo.png')) {
-                                return;
-                            }
-                            
-                            (e.currentTarget as HTMLImageElement).src = '/logo.png';
-                        }}
-                    />
-                    <h1>{(companyProfileHook.profile.name && companyProfileHook.profile.name.trim()) ? companyProfileHook.profile.name : 'Прораб'}</h1>
-                </div>
-                <div className="app-header-right">
-                    <button onClick={appState.handleThemeChange} className="header-btn" aria-label="Сменить тему">
-                        {themeIcon()}
+                            }}
+                        />
+                        <h1>{(companyProfileHook.profile.name && companyProfileHook.profile.name.trim()) ? companyProfileHook.profile.name : 'Прораб'}</h1>
+                    </div>
+                    <div className="app-header-right">
+                        <button onClick={appState.handleThemeChange} className="header-btn" aria-label="Сменить тему">
+                            {themeIcon()}
+                        </button>
+                        <button onClick={() => startTransition(() => appState.openModal('library'))} className="header-btn" aria-label="Справочник">
+                            <IconBook />
+                        </button>
+                        <button onClick={() => startTransition(() => appState.openModal('estimatesList'))} className="header-btn" aria-label="Список смет">
+                            <IconClipboard />
+                        </button>
+                        <button onClick={() => appState.navigateToView('reports')} className="header-btn" aria-label="Отчеты">
+                            <IconTrendingUp />
+                        </button>
+                        <button onClick={() => startTransition(() => appState.openModal('settings'))} className="header-btn" aria-label="Настройки">
+                            <IconSettings />
+                        </button>
+                    </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="app-content">
+                    {renderView()}
+                </main>
+
+                {/* Bottom Navigation */}
+                <nav className="bottom-nav">
+                    <button 
+                        onClick={() => appState.navigateToView('workspace')} 
+                        className={appState.activeView === 'workspace' ? 'active' : ''}
+                    >
+                        <IconHome />
+                        <span>Главная</span>
                     </button>
-                    <button onClick={() => startTransition(() => appState.openModal('library'))} className="header-btn" aria-label="Справочник">
-                        <IconBook />
+                    <button 
+                        onClick={() => {
+                            // Если есть активный проект, возвращаемся к нему, иначе к списку проектов
+                            if (appState.activeProjectId) {
+                                appState.navigateToView('projectDetail');
+                            } else {
+                                appState.navigateToView('projects');
+                            }
+                        }} 
+                        className={appState.activeView.startsWith('project') ? 'active' : ''}
+                    >
+                        <IconProject />
+                        <span>Проекты</span>
                     </button>
-                    <button onClick={() => startTransition(() => appState.openModal('estimatesList'))} className="header-btn" aria-label="Список смет">
+                    <button 
+                        onClick={() => {
+                            // НЕ сбрасываем activeProjectId, чтобы можно было вернуться к проекту
+                            // Если уже есть активная смета, не создаем новую
+                            if (!estimatesHook.currentEstimate) {
+                                estimatesHook.createNewEstimate();
+                            }
+                            startTransition(() => {
+                                appState.setActiveView('estimate');
+                            });
+                        }} 
+                        className={appState.activeView === 'estimate' ? 'active' : ''}
+                    >
+                        <IconDocument />
+                        <span>Смета</span>
+                    </button>
+                    <button 
+                        onClick={() => appState.navigateToView('inventory')} 
+                        className={appState.activeView.startsWith('inventory') || appState.activeView === 'toolDetails' ? 'active' : ''}
+                    >
                         <IconClipboard />
+                        <span>Инвентарь</span>
                     </button>
-                    <button onClick={() => appState.navigateToView('reports')} className="header-btn" aria-label="Отчеты">
-                        <IconTrendingUp />
+                    <button 
+                        onClick={() => appState.navigateToView('allTasks')} 
+                        className={appState.activeView === 'allTasks' ? 'active' : ''}
+                    >
+                        <IconCheckSquare />
+                        <span>Задачи</span>
                     </button>
-                    <button onClick={() => startTransition(() => appState.openModal('settings'))} className="header-btn" aria-label="Настройки">
-                        <IconSettings />
+                    <button 
+                        onClick={() => appState.navigateToView('calculator')} 
+                        className={appState.activeView === 'calculator' ? 'active' : ''}
+                    >
+                        <IconSparkles />
+                        <span>Калькулятор</span>
                     </button>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main>
-                {renderView()}
-            </main>
-
-            {/* Bottom Navigation */}
-            <nav className="bottom-nav">
-                <button 
-                    onClick={() => appState.navigateToView('workspace')} 
-                    className={appState.activeView === 'workspace' ? 'active' : ''}
-                >
-                    <IconHome />
-                    <span>Главная</span>
-                </button>
-                <button 
-                    onClick={() => {
-                        // Если есть активный проект, возвращаемся к нему, иначе к списку проектов
-                        if (appState.activeProjectId) {
-                            appState.navigateToView('projectDetail');
-                        } else {
-                            appState.navigateToView('projects');
-                        }
-                    }} 
-                    className={appState.activeView.startsWith('project') ? 'active' : ''}
-                >
-                    <IconProject />
-                    <span>Проекты</span>
-                </button>
-                <button 
-                    onClick={() => {
-                        // НЕ сбрасываем activeProjectId, чтобы можно было вернуться к проекту
-                        // Если уже есть активная смета, не создаем новую
-                        if (!estimatesHook.currentEstimate) {
-                            estimatesHook.createNewEstimate();
-                        }
-                        startTransition(() => {
-                            appState.setActiveView('estimate');
-                        });
-                    }} 
-                    className={appState.activeView === 'estimate' ? 'active' : ''}
-                >
-                    <IconDocument />
-                    <span>Смета</span>
-                </button>
-                <button 
-                    onClick={() => appState.navigateToView('inventory')} 
-                    className={appState.activeView.startsWith('inventory') || appState.activeView === 'toolDetails' ? 'active' : ''}
-                >
-                    <IconClipboard />
-                    <span>Инвентарь</span>
-                </button>
-                <button 
-                    onClick={() => appState.navigateToView('allTasks')} 
-                    className={appState.activeView === 'allTasks' ? 'active' : ''}
-                >
-                    <IconCheckSquare />
-                    <span>Задачи</span>
-                </button>
-                <button 
-                    onClick={() => appState.navigateToView('calculator')} 
-                    className={appState.activeView === 'calculator' ? 'active' : ''}
-                >
-                    <IconSparkles />
-                    <span>Калькулятор</span>
-                </button>
-            </nav>
+                </nav>
 
             {/* Modals */}
             {appState.showSettingsModal && (
